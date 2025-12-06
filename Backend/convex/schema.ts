@@ -2,67 +2,140 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-  ingredients: defineTable({
-    inciName: v.string(),
-    canonicalName: v.string(),
-    function: v.string(), // e.g., "Antioxidant", "Exfoliant"
-    category: v.string(), // e.g., "Active", "Preservative"
-    pHRangeOptimal: v.optional(v.string()), // e.g., "3.0-4.0"
-    irritancyScore: v.optional(v.number()), // 0-5
-    comedogenicScore: v.optional(v.number()), // 0-5
-    knownHarmfulFlag: v.optional(v.boolean()),
-    generalSensitivityFlag: v.optional(v.boolean()),
-    pregnancySafeFlag: v.optional(v.boolean()),
-    sourceCitation: v.optional(v.string()),
-  }).searchIndex("by_name", {
-    searchField: "canonicalName",
-    filterFields: ["category", "function"],
-  }),
-
-  compatibility_matrix: defineTable({
-    ingredientAId: v.id("ingredients"),
-    ingredientBId: v.id("ingredients"),
-    conflictType: v.string(), // e.g., "Deactivation", "High Irritation", "Stability Risk", "Synergy"
-    recommendation: v.string(), // e.g., "Separate AM/PM", "Alternate Days", "Do Not Use Together"
-    explanation: v.string(), // Brief explanation for the conflict/synergy
-    sourceCitation: v.optional(v.string()),
-  }),
-
-  knowledge_base: defineTable({
-    textChunk: v.string(),
-    keywords: v.array(v.string()),
-    ingredientTags: v.array(v.string()),
-    sourceUrl: v.optional(v.string()),
-    category: v.string(), // e.g., "Compatibility", "IngredientInfo"
-  }).searchIndex("by_keywords", {
-    searchField: "keywords",
-    filterFields: ["category", "ingredientTags"],
-  }),
-
-  user_profiles: defineTable({
-    // If you implement user auth later
-    skinType: v.string(),
+  // User profiles
+  userProfiles: defineTable({
+    userId: v.string(), // Clerk user ID
+    skinType: v.union(
+      v.literal("oily"),
+      v.literal("dry"),
+      v.literal("combination"),
+      v.literal("normal"),
+      v.literal("sensitive")
+    ),
     sensitivities: v.array(v.string()),
     goals: v.array(v.string()),
-    allergies: v.optional(v.array(v.string())),
-  }),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_userId", ["userId"]),
 
-  analysis_logs: defineTable({
-    // For TiDB integration, you might log here first then push to TiDB
-    userId: v.optional(v.id("user_profiles")),
-    timestamp: v.number(),
-    inputProducts: v.array(v.object({
-      productName: v.string(),
-      inciList: v.string(),
-      usageTime: v.string(),
-      applicationOrder: v.optional(v.number()),
-    })),
-    analysisResult: v.any(), // Store the full analysis output
-    llmCalls: v.array(v.object({
-      prompt: v.string(),
-      response: v.string(),
-      model: v.string(),
-      timestamp: v.number(),
-    })),
-  }),
+  // Master ingredient database
+  ingredients: defineTable({
+    inciName: v.string(),
+    commonNames: v.array(v.string()),
+    function: v.string(),
+    category: v.union(
+      v.literal("active"),
+      v.literal("base"),
+      v.literal("preservative"),
+      v.literal("fragrance")
+    ),
+    isActive: v.boolean(),
+  })
+    .index("by_inciName", ["inciName"])
+    .searchIndex("search_ingredients", {
+      searchField: "inciName",
+      filterFields: ["category", "isActive"],
+    }),
+
+  // Ingredient properties
+  ingredientProperties: defineTable({
+    ingredientId: v.id("ingredients"),
+    phRangeMin: v.optional(v.number()),
+    phRangeMax: v.optional(v.number()),
+    irritancyScore: v.number(), // 0-5
+    comedogenicScore: v.number(), // 0-5
+    isHarmful: v.boolean(),
+  }).index("by_ingredientId", ["ingredientId"]),
+
+  // Compatibility matrix (hardcoded conflicts)
+  compatibilityMatrix: defineTable({
+    ingredientAId: v.id("ingredients"),
+    ingredientBId: v.id("ingredients"),
+    conflictType: v.string(),
+    severity: v.string(),
+    recommendation: v.string(),
+    scientificBasis: v.optional(v.string()),
+  })
+    .index("by_ingredientA", ["ingredientAId"])
+    .index("by_ingredientB", ["ingredientBId"])
+    .index("by_pair", ["ingredientAId", "ingredientBId"]),
+
+  // User routines
+  routines: defineTable({
+    userId: v.string(),
+    name: v.string(),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_userId", ["userId"]),
+
+  // Products in routine
+  products: defineTable({
+    routineId: v.id("routines"),
+    productName: v.string(),
+    brandName: v.optional(v.string()),
+    rawInciList: v.string(), // Full ingredient list
+    usageTime: v.union(
+      v.literal("AM"),
+      v.literal("PM"),
+      v.literal("both"),
+      v.literal("alternate"),
+      v.literal("weekly")
+    ),
+    orderInRoutine: v.number(),
+    createdAt: v.number(),
+  }).index("by_routineId", ["routineId"]),
+
+  // Product Ingredients (Normalized)
+  productIngredients: defineTable({
+    productId: v.id("products"),
+    ingredientId: v.id("ingredients"),
+    position: v.number(), // Position in ingredient list
+    concentration: v.optional(v.number()),
+  })
+    .index("by_productId", ["productId"])
+    .index("by_ingredientId", ["ingredientId"]),
+
+  // Analysis Results
+  analysisResults: defineTable({
+    userId: v.string(),
+    routineId: v.id("routines"),
+    overallRiskScore: v.union(
+      v.literal("safe"),
+      v.literal("caution"),
+      v.literal("high_risk")
+    ),
+    summaryScore: v.string(), // "A+", "B", "C", etc.
+    conflictsFound: v.number(),
+    analysisData: v.string(), // JSON stringified detailed analysis
+    recommendations: v.array(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_routineId", ["routineId"]),
+
+  // Detected Conflicts
+  detectedConflicts: defineTable({
+    analysisId: v.id("analysisResults"),
+    productAId: v.id("products"),
+    productBId: v.id("products"),
+    ingredientAId: v.id("ingredients"),
+    ingredientBId: v.id("ingredients"),
+    conflictType: v.string(),
+    severity: v.string(),
+    explanation: v.string(), // LLM-generated or hardcoded
+    recommendation: v.string(),
+    isTemporalConflict: v.boolean(), // Same AM/PM timing
+  }).index("by_analysisId", ["analysisId"]),
+
+  // LLM Research Cache
+  llmResearchCache: defineTable({
+    ingredientPairHash: v.string(), // Hash of ingredient pair
+    query: v.string(),
+    claudeResponse: v.string(),
+    confidence: v.number(),
+    citations: v.array(v.string()),
+    createdAt: v.number(),
+    expiresAt: v.number(), // Cache TTL
+  }).index("by_pairHash", ["ingredientPairHash"]),
 });

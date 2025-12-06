@@ -8,9 +8,12 @@
  * @module
  */
 
+import type * as functions_cleanup from "../functions/cleanup.js";
+import type * as functions_helpers from "../functions/helpers.js";
 import type * as functions_ingredients from "../functions/ingredients.js";
 import type * as functions_llm from "../functions/llm.js";
 import type * as functions_rag from "../functions/rag.js";
+import type * as functions_seed from "../functions/seed.js";
 import type * as functions_tidb from "../functions/tidb.js";
 
 import type {
@@ -20,9 +23,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "functions/cleanup": typeof functions_cleanup;
+  "functions/helpers": typeof functions_helpers;
   "functions/ingredients": typeof functions_ingredients;
   "functions/llm": typeof functions_llm;
   "functions/rag": typeof functions_rag;
+  "functions/seed": typeof functions_seed;
   "functions/tidb": typeof functions_tidb;
 }>;
 
