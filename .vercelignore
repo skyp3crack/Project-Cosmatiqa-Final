@@ -1,0 +1,8 @@
+Backend/
+node_modules/
+*.md
+PRPs/
+.env.local
+.env
+dist/
+
