@@ -1,10 +1,44 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 const UserContext = createContext();
 
 export function UserProvider({ children }) {
-  const [userProfile, setUserProfile] = useState(null);
-  const [analysisData, setAnalysisData] = useState(null);
+  // Load from localStorage on mount
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const stored = localStorage.getItem('userProfile');
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+  
+  const [analysisData, setAnalysisData] = useState(() => {
+    try {
+      const stored = localStorage.getItem('analysisData');
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  // Save to localStorage whenever userProfile changes
+  useEffect(() => {
+    if (userProfile) {
+      localStorage.setItem('userProfile', JSON.stringify(userProfile));
+    } else {
+      localStorage.removeItem('userProfile');
+    }
+  }, [userProfile]);
+
+  // Save to localStorage whenever analysisData changes
+  useEffect(() => {
+    if (analysisData) {
+      localStorage.setItem('analysisData', JSON.stringify(analysisData));
+    } else {
+      localStorage.removeItem('analysisData');
+    }
+  }, [analysisData]);
   
   return (
     <UserContext.Provider value={{ 

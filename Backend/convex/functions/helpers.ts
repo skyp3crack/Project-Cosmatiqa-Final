@@ -142,3 +142,23 @@ export const getIngredientConflicts = query({
   },
 });
 
+/**
+ * Get all ingredients
+ */
+export const getAllIngredients = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("ingredients").collect();
+  },
+});
+
+/**
+ * Get all conflicts (for verification)
+ */
+export const getAllConflicts = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("compatibilityMatrix").collect();
+  },
+});
+

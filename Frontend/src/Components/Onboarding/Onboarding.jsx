@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
+import { useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 
 const skinTypes = ['Normal', 'Oily', 'Dry', 'Combination', 'Sensitive'];
 
@@ -16,10 +18,12 @@ const skinConcerns = [
 export default function Onboarding() {
   const navigate = useNavigate();
   const { setUserProfile } = useUser();
+  const createProfile = useMutation(api.functions.users.createOrUpdateProfile);
   
   const [skinType, setSkinType] = useState('Normal');
   const [selectedConcerns, setSelectedConcerns] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const toggleConcern = (concern) => {
     if (selectedConcerns.includes(concern)) {
@@ -29,9 +33,38 @@ export default function Onboarding() {
     }
   };
 
-  const handleContinue = () => {
-    setUserProfile({ skinType, concerns: selectedConcerns });
-    navigate('/product-input');
+  const handleContinue = async () => {
+    setIsLoading(true);
+    try {
+      // Generate a temporary userId (in production, this would come from Clerk)
+      const tempUserId = `temp_user_${Date.now()}`;
+      
+      // Save to Convex backend
+      const result = await createProfile({
+        userId: tempUserId,
+        skinType: skinType.toLowerCase(),
+        sensitivities: selectedConcerns,
+        goals: selectedConcerns, // Using concerns as goals for now
+      });
+
+      // Also save to local context for immediate access
+      // Include all fields that Profile component expects
+      setUserProfile({ 
+        userId: tempUserId,
+        skinType: skinType.toLowerCase(), 
+        sensitivities: selectedConcerns,
+        goals: selectedConcerns, // Profile component uses 'goals' field
+        concerns: selectedConcerns, // Keep for backwards compatibility
+        profileId: result.profileId,
+      });
+
+      navigate('/product-input');
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+      alert('Failed to save profile. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBack = () => {
@@ -39,7 +72,7 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-100 via-stone-50 to-amber-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-stone-100 via-stone-50 to-amber-50 flex items-center justify-center p-4" style={{ paddingBottom: '100px' }}>
       {/* Decorative background elements */}
       <div className="absolute top-20 left-10 w-32 h-32 bg-emerald-200/30 rounded-full blur-3xl" />
       <div className="absolute bottom-20 right-10 w-40 h-40 bg-amber-200/30 rounded-full blur-3xl" />
@@ -259,9 +292,10 @@ export default function Onboarding() {
           <div className="px-6 pb-6">
             <button
               onClick={handleContinue}
-              className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 transition-all duration-200 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5 active:translate-y-0"
+              disabled={isLoading}
+              className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 transition-all duration-200 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Continue
+              {isLoading ? 'Saving Profile...' : 'Continue'}
             </button>
           </div>
         </div>

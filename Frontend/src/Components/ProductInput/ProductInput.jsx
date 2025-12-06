@@ -1,15 +1,30 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
+import { useAction } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { Sun, Moon, Sunset } from 'lucide-react';
 
 export default function ProductInput() {
   const navigate = useNavigate();
-  const { userProfile } = useUser();
+  const { userProfile, setAnalysisData } = useUser();
+  const analyzeRoutine = useAction(api.functions.analysis.analyzeRoutine);
   
   const [products, setProducts] = useState([
-    { id: 1, name: '', ingredients: '', time: 'AM' },
-    { id: 2, name: '', ingredients: '', time: 'Both' }
+    { 
+      id: 1, 
+      name: 'Drunk Elephant C-Firma Fresh Day Serum', 
+      ingredients: '15% L-Ascorbic Acid (Vitamin C), Ferulic Acid, Vitamin E (Alpha Tocopherol)', 
+      time: 'AM' 
+    },
+    { 
+      id: 2, 
+      name: 'The Ordinary Granactive Retinoid 2% Emulsion', 
+      ingredients: '2% Granactive Retinoid (Hydroxypinacolone Retinoate), Retinol (in a lower concentration), Squalane, Glycerin', 
+      time: 'Both' 
+    }
   ]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const addProduct = () => {
     setProducts([...products, { 
@@ -36,13 +51,51 @@ export default function ProductInput() {
     navigate('/onboarding');
   };
 
-  const handleAnalyze = () => {
-    // You can pass products data to context or just navigate
-    navigate('/analysis');
+  const handleAnalyze = async () => {
+    // Validate input
+    const filledProducts = products.filter(p => p.name && p.ingredients);
+    if (filledProducts.length < 2) {
+      alert('Please add at least 2 products with ingredients');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      // Get userId from userProfile (saved during onboarding)
+      const userId = userProfile?.userId || `temp_user_${Date.now()}`;
+      
+      // Call Convex mutation to analyze routine
+      const result = await analyzeRoutine({
+        userId,
+        routineName: `Routine ${new Date().toLocaleDateString()}`,
+        products: filledProducts.map(p => ({
+          name: p.name,
+          ingredientList: p.ingredients,
+          usageTiming: p.time,
+        })),
+      });
+
+      // Save result to context
+      setAnalysisData({
+        analysisId: result.analysisId,
+        routineId: result.routineId,
+        safetyScore: result.safetyScore,
+        conflictsFound: result.conflictsFound,
+        ingredientsAnalyzed: result.ingredientsAnalyzed,
+      });
+
+      // Navigate to loading/results page
+      navigate('/analysis');
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      alert('Failed to analyze routine. Please try again.');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" style={{ paddingBottom: '80px' }}>
       {/* Header Section - Outside of white box */}
       <div className="mb-6 px-4 pt-6">
         <div className="flex items-center gap-4 mb-4">
@@ -115,34 +168,35 @@ export default function ProductInput() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => updateProduct(product.id, 'time', 'AM')}
-                    className={`flex-1 py-3 px-4 rounded-full text-sm font-medium transition-all ${
+                    className={`flex-1 py-3 px-4 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
                       product.time === 'AM'
                         ? 'bg-green-100 text-green-700 border-2 border-green-300'
                         : 'bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <span className="mr-1.5">☀️</span>
+                    <Sun size={16} style={{ color: product.time === 'AM' ? '#16A34A' : '#6B7280' }} />
                     AM
                   </button>
                   <button
                     onClick={() => updateProduct(product.id, 'time', 'PM')}
-                    className={`flex-1 py-3 px-4 rounded-full text-sm font-medium transition-all ${
+                    className={`flex-1 py-3 px-4 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
                       product.time === 'PM'
                         ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
                         : 'bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <span className="mr-1.5">🌙</span>
+                    <Moon size={16} style={{ color: product.time === 'PM' ? '#9333EA' : '#6B7280' }} />
                     PM
                   </button>
                   <button
                     onClick={() => updateProduct(product.id, 'time', 'Both')}
-                    className={`flex-1 py-3 px-4 rounded-full text-sm font-medium transition-all ${
+                    className={`flex-1 py-3 px-4 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
                       product.time === 'Both'
                         ? 'bg-green-100 text-green-700 border-2 border-green-300'
                         : 'bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300'
                     }`}
                   >
+                    <Sunset size={16} style={{ color: product.time === 'Both' ? '#16A34A' : '#6B7280' }} />
                     Both
                   </button>
                 </div>
@@ -170,9 +224,20 @@ export default function ProductInput() {
         {/* Analyze Button */}
         <button 
           onClick={handleAnalyze}
-          className="w-full mt-6 py-4 bg-green-400 hover:bg-green-500 text-white font-semibold rounded-2xl transition-all shadow-sm"
+          disabled={isAnalyzing}
+          className="w-full mt-6 py-4 bg-green-400 hover:bg-green-500 text-white font-semibold rounded-2xl transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Analyze My Routine
+          {isAnalyzing ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Analyzing...
+            </span>
+          ) : (
+            'Analyze My Routine'
+          )}
         </button>
         <p className="text-center text-xs text-gray-400 mt-3">
           Minimum 2 products required

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Sun, Moon, Clock, AlertTriangle } from 'lucide-react';
 
 export default function DetailedView() {
   const navigate = useNavigate();
@@ -9,7 +10,7 @@ export default function DetailedView() {
   };
 
   return (
-    <div className="min-h-screen bg-white overflow-y-auto">
+    <div className="min-h-screen bg-white overflow-y-auto" style={{ paddingBottom: '80px' }}>
       <div className="max-w-md mx-auto px-4 py-8">
         <div className="bg-white w-full">
           {/* Header */}
@@ -66,7 +67,7 @@ export default function DetailedView() {
               <div className="space-y-3">
                 {/* Morning */}
                 <div className="bg-amber-50 rounded-xl p-4 flex gap-3">
-                  <div className="text-2xl">☀️</div>
+                  <Sun size={24} style={{ color: '#A9D1B0' }} />
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1 text-sm">
                       Use Vitamin C in the Morning
@@ -79,7 +80,7 @@ export default function DetailedView() {
 
                 {/* Night */}
                 <div className="bg-indigo-50 rounded-xl p-4 flex gap-3">
-                  <div className="text-2xl">🌙</div>
+                  <Moon size={24} style={{ color: '#A9D1B0' }} />
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1 text-sm">
                       Use Retinol at Night
@@ -92,7 +93,7 @@ export default function DetailedView() {
 
                 {/* Same Day */}
                 <div className="bg-gray-50 rounded-xl p-4 flex gap-3">
-                  <div className="text-2xl">⏰</div>
+                  <Clock size={24} style={{ color: '#A9D1B0' }} />
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1 text-sm">
                       If Using on the Same Day
@@ -118,7 +119,7 @@ export default function DetailedView() {
             {/* Important Note */}
             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
               <div className="flex gap-3">
-                <div className="text-red-500 text-xl flex-shrink-0">⚠️</div>
+                <AlertTriangle size={20} style={{ color: '#FFB3A7' }} className="flex-shrink-0" />
                 <div>
                   <h4 className="font-bold text-red-800 mb-2 text-sm">
                     Important Note

@@ -14,11 +14,8 @@ import type * as functions_helpers from "../functions/helpers.js";
 import type * as functions_ingredients from "../functions/ingredients.js";
 import type * as functions_llm from "../functions/llm.js";
 import type * as functions_products from "../functions/products.js";
-import type * as functions_properties from "../functions/properties.js";
 import type * as functions_rag from "../functions/rag.js";
-import type * as functions_research from "../functions/research.js";
 import type * as functions_seed from "../functions/seed.js";
-import type * as functions_seedAll from "../functions/seedAll.js";
 import type * as functions_tidb from "../functions/tidb.js";
 import type * as functions_users from "../functions/users.js";
 
@@ -35,11 +32,8 @@ declare const fullApi: ApiFromModules<{
   "functions/ingredients": typeof functions_ingredients;
   "functions/llm": typeof functions_llm;
   "functions/products": typeof functions_products;
-  "functions/properties": typeof functions_properties;
   "functions/rag": typeof functions_rag;
-  "functions/research": typeof functions_research;
   "functions/seed": typeof functions_seed;
-  "functions/seedAll": typeof functions_seedAll;
   "functions/tidb": typeof functions_tidb;
   "functions/users": typeof functions_users;
 }>;

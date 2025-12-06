@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '../../context/UserContext';
 
 export default function AnalysisLoading() {
   const navigate = useNavigate();
+  const { analysisData } = useUser();
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -12,6 +14,14 @@ export default function AnalysisLoading() {
     "Cross-referencing our database...",
     "Generating your routine..."
   ];
+
+  // Redirect if no analysis data (shouldn't happen in normal flow)
+  useEffect(() => {
+    if (!analysisData) {
+      console.warn('No analysis data found, redirecting to product input');
+      navigate('/product-input');
+    }
+  }, [analysisData, navigate]);
 
   useEffect(() => {
     // Simulate progress
@@ -47,7 +57,7 @@ export default function AnalysisLoading() {
   }, [progress, navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center" style={{ backgroundColor: '#F8F5F1' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center" style={{ backgroundColor: '#F8F5F1', paddingBottom: '80px' }}>
       {/* Flask Icon Circle */}
       <div className="relative mb-16">
         {/* Outer glow circles */}
