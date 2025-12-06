@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function AnalysisLoading() {
+  const navigate = useNavigate();
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -33,6 +35,16 @@ export default function AnalysisLoading() {
       clearInterval(stepInterval);
     };
   }, []);
+
+  // Navigate to results when progress completes
+  useEffect(() => {
+    if (progress === 100) {
+      const timeout = setTimeout(() => {
+        navigate('/results');
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [progress, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center" style={{ backgroundColor: '#F8F5F1' }}>

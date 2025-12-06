@@ -1,7 +1,13 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const WelcomePage = () => {
   const [isHovered, setIsHovered] = React.useState(false);
+  const navigate = useNavigate();
+
+  const handleGetStarted = () => {
+    navigate('/onboarding');
+  };
 
   return (
     <div 
@@ -191,6 +197,7 @@ const WelcomePage = () => {
 
         {/* CTA Button */}
         <button 
+          onClick={handleGetStarted}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           style={{ 

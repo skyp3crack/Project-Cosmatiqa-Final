@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '../../context/UserContext';
 
 export default function ProductInput() {
+  const navigate = useNavigate();
+  const { userProfile } = useUser();
+  
   const [products, setProducts] = useState([
     { id: 1, name: '', ingredients: '', time: 'AM' },
     { id: 2, name: '', ingredients: '', time: 'Both' }
@@ -27,12 +32,24 @@ export default function ProductInput() {
     ));
   };
 
+  const handleBack = () => {
+    navigate('/onboarding');
+  };
+
+  const handleAnalyze = () => {
+    // You can pass products data to context or just navigate
+    navigate('/analysis');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header Section - Outside of white box */}
       <div className="mb-6 px-4 pt-6">
         <div className="flex items-center gap-4 mb-4">
-          <button className="text-gray-700 hover:text-gray-900">
+          <button 
+            onClick={handleBack}
+            className="text-gray-700 hover:text-gray-900"
+          >
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
@@ -151,7 +168,10 @@ export default function ProductInput() {
         </button>
 
         {/* Analyze Button */}
-        <button className="w-full mt-6 py-4 bg-green-400 hover:bg-green-500 text-white font-semibold rounded-2xl transition-all shadow-sm">
+        <button 
+          onClick={handleAnalyze}
+          className="w-full mt-6 py-4 bg-green-400 hover:bg-green-500 text-white font-semibold rounded-2xl transition-all shadow-sm"
+        >
           Analyze My Routine
         </button>
         <p className="text-center text-xs text-gray-400 mt-3">

@@ -1,6 +1,13 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function DetailedView() {
+  const navigate = useNavigate();
+
+  const handleClose = () => {
+    navigate('/results');
+  };
+
   return (
     <div className="min-h-screen bg-white overflow-y-auto">
       <div className="max-w-md mx-auto px-4 py-8">
@@ -11,7 +18,10 @@ export default function DetailedView() {
               <h2 className="text-lg font-semibold text-gray-800 pr-8">
                 The Ordinary Retinol 0.5% <span className="text-red-500">✕</span> Paula's Choice C15 Booster
               </h2>
-              <button className="text-gray-400 hover:text-gray-600 text-2xl leading-none -mt-1">
+              <button 
+                onClick={handleClose}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none -mt-1"
+              >
                 ✕
               </button>
             </div>
@@ -125,4 +135,3 @@ export default function DetailedView() {
     </div>
   );
 }
-

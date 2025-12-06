@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '../../context/UserContext';
 
 const skinTypes = ['Normal', 'Oily', 'Dry', 'Combination', 'Sensitive'];
 
@@ -11,7 +13,10 @@ const skinConcerns = [
   'Oiliness',
 ];
 
-export default function Onboarding({ onContinue, onBack }) {
+export default function Onboarding() {
+  const navigate = useNavigate();
+  const { setUserProfile } = useUser();
+  
   const [skinType, setSkinType] = useState('Normal');
   const [selectedConcerns, setSelectedConcerns] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -25,9 +30,12 @@ export default function Onboarding({ onContinue, onBack }) {
   };
 
   const handleContinue = () => {
-    if (onContinue) {
-      onContinue({ skinType, concerns: selectedConcerns });
-    }
+    setUserProfile({ skinType, concerns: selectedConcerns });
+    navigate('/product-input');
+  };
+
+  const handleBack = () => {
+    navigate('/');
   };
 
   return (
@@ -48,7 +56,7 @@ export default function Onboarding({ onContinue, onBack }) {
           <div className="px-6 pt-6 pb-4">
             <div className="flex items-center gap-4 mb-6">
               <button
-                onClick={onBack}
+                onClick={handleBack}
                 className="w-10 h-10 rounded-full bg-emerald-50 hover:bg-emerald-100 flex items-center justify-center transition-colors group"
               >
                 <svg

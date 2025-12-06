@@ -1,6 +1,17 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const ResultsDashboard = () => {
+  const navigate = useNavigate();
+
+  const handleBack = () => {
+    navigate('/product-input');
+  };
+
+  const handleSeeDetails = () => {
+    navigate('/detailed');
+  };
+
   return (
     <div 
       style={{ 
@@ -18,6 +29,7 @@ const ResultsDashboard = () => {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '32px' }}>
           <button 
+            onClick={handleBack}
             style={{ 
               background: 'none',
               border: 'none',
@@ -149,6 +161,7 @@ const ResultsDashboard = () => {
             Reduces efficacy of Vitamin C and can cause irritation.
           </p>
           <button 
+            onClick={handleSeeDetails}
             style={{ 
               background: 'none',
               border: 'none',
@@ -200,6 +213,7 @@ const ResultsDashboard = () => {
             Can cause excessive dryness and over-exfoliation.
           </p>
           <button 
+            onClick={handleSeeDetails}
             style={{ 
               background: 'none',
               border: 'none',
