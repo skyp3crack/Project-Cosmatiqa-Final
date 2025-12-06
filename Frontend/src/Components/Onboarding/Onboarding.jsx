@@ -1,275 +1,356 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { ChevronLeft, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useUser } from '../../context/UserContext';
-
-const skinTypes = ['Normal', 'Oily', 'Dry', 'Combination', 'Sensitive'];
-
-const skinConcerns = [
-  'Acne',
-  'Aging',
-  'Hyperpigmentation',
-  'Dryness',
-  'Redness',
-  'Oiliness',
-];
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { setUserProfile } = useUser();
-  
   const [skinType, setSkinType] = useState('Normal');
-  const [selectedConcerns, setSelectedConcerns] = useState([]);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedConcerns, setSelectedConcerns] = useState(['Acne', 'Dryness']);
+  
+  const concerns = [
+    'Acne',
+    'Aging',
+    'Hyperpigmentation',
+    'Dryness',
+    'Redness',
+    'Oiliness'
+  ];
 
   const toggleConcern = (concern) => {
     if (selectedConcerns.includes(concern)) {
-      setSelectedConcerns(selectedConcerns.filter((c) => c !== concern));
+      setSelectedConcerns(selectedConcerns.filter(c => c !== concern));
     } else if (selectedConcerns.length < 3) {
       setSelectedConcerns([...selectedConcerns, concern]);
     }
   };
 
   const handleContinue = () => {
-    setUserProfile({ skinType, concerns: selectedConcerns });
-    navigate('/product-input');
+    const profileData = {
+      skinType,
+      concerns: selectedConcerns
+    };
+    // Save to localStorage so step 2 can access it
+    localStorage.setItem('skinProfile', JSON.stringify(profileData));
+    // Navigate to step 2
+    navigate('/onboarding-2');
   };
 
   const handleBack = () => {
+    // Navigate back to welcome page
     navigate('/');
   };
 
+  const styles = {
+    container: {
+      minHeight: '100vh',
+      background: 'linear-gradient(180deg, #e9d5ff 0%, #c4b5fd 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px'
+    },
+    mainCard: {
+      width: '100%',
+      maxWidth: '260px',
+      backgroundColor: 'white',
+      borderRadius: '24px',
+      boxShadow: '0 10px 30px rgba(139, 92, 246, 0.3)',
+      border: '3px solid #c4b5fd',
+      overflow: 'hidden'
+    },
+    header: {
+      padding: '16px 16px 20px 16px',
+      borderBottom: '1px solid #f3f4f6'
+    },
+    headerTop: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      marginBottom: '16px'
+    },
+    backButton: {
+      width: '32px',
+      height: '32px',
+      borderRadius: '50%',
+      backgroundColor: '#f3f4f6',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      border: 'none',
+      cursor: 'pointer',
+      flexShrink: 0
+    },
+    headerTitle: {
+      fontSize: '14px',
+      fontWeight: '600',
+      color: '#111827',
+      flex: 1,
+      textAlign: 'center'
+    },
+    progressBars: {
+      display: 'flex',
+      gap: '8px',
+      marginTop: '12px'
+    },
+    progressBar: {
+      height: '4px',
+      flex: 1,
+      borderRadius: '10px'
+    },
+    contentArea: {
+      padding: '24px 20px 24px 20px'
+    },
+    heroContainer: {
+      display: 'flex',
+      justifyContent: 'center',
+      marginBottom: '24px'
+    },
+    heroCircle: {
+      width: '120px',
+      height: '120px',
+      borderRadius: '50%',
+      background: 'linear-gradient(135deg, #d97706 0%, #ea580c 50%, #b45309 100%)',
+      boxShadow: '0 8px 20px rgba(234, 88, 12, 0.4)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+      overflow: 'visible'
+    },
+    heroInner: {
+      width: '60px',
+      height: '60px',
+      borderRadius: '50%',
+      background: 'linear-gradient(135deg, #fde68a 0%, #fef3c7 100%)',
+      position: 'relative',
+      zIndex: 2
+    },
+    heroHand: {
+      width: '48px',
+      height: '38px',
+      background: 'linear-gradient(135deg, #fed7aa 0%, #fdba74 100%)',
+      borderRadius: '50% 50% 50% 20%',
+      position: 'absolute',
+      bottom: '-10px',
+      left: '8px',
+      transform: 'rotate(-15deg)',
+      zIndex: 1
+    },
+    leafContainer: {
+      position: 'absolute',
+      top: '18px',
+      right: '12px',
+      zIndex: 3
+    },
+    title: {
+      fontSize: '22px',
+      fontWeight: 'bold',
+      color: '#111827',
+      textAlign: 'center',
+      lineHeight: '1.3',
+      marginBottom: '12px'
+    },
+    subtitle: {
+      fontSize: '12px',
+      color: '#6b7280',
+      textAlign: 'center',
+      lineHeight: '1.5',
+      marginBottom: '24px'
+    },
+    formSection: {
+      marginBottom: '20px'
+    },
+    label: {
+      display: 'block',
+      fontSize: '13px',
+      fontWeight: '600',
+      color: '#111827',
+      marginBottom: '10px'
+    },
+    selectWrapper: {
+      position: 'relative'
+    },
+    select: {
+      width: '100%',
+      padding: '10px 12px',
+      fontSize: '13px',
+      border: '1px solid #d1d5db',
+      borderRadius: '10px',
+      backgroundColor: 'white',
+      color: '#374151',
+      appearance: 'none',
+      cursor: 'pointer',
+      outline: 'none'
+    },
+    dropdownIcon: {
+      position: 'absolute',
+      right: '12px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      pointerEvents: 'none',
+      color: '#6b7280'
+    },
+    concernsHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '12px'
+    },
+    concernsCount: {
+      fontSize: '11px',
+      color: '#9ca3af'
+    },
+    concernsGrid: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '8px'
+    },
+    concernButton: {
+      padding: '8px 16px',
+      fontSize: '12px',
+      fontWeight: '500',
+      borderRadius: '20px',
+      border: 'none',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      transition: 'all 0.2s'
+    },
+    concernButtonSelected: {
+      backgroundColor: '#86efac',
+      color: '#065f46'
+    },
+    concernButtonUnselected: {
+      backgroundColor: '#f9fafb',
+      color: '#4b5563',
+      border: '1px solid #e5e7eb'
+    },
+    xCircle: {
+      width: '16px',
+      height: '16px',
+      borderRadius: '50%',
+      backgroundColor: '#10b981',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    continueButton: {
+      width: '100%',
+      padding: '16px',
+      backgroundColor: '#86efac',
+      color: '#065f46',
+      fontSize: '14px',
+      fontWeight: '600',
+      border: 'none',
+      borderRadius: '14px',
+      cursor: 'pointer',
+      marginTop: '24px',
+      transition: 'background-color 0.2s'
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-100 via-stone-50 to-amber-50 flex items-center justify-center p-4">
-      {/* Decorative background elements */}
-      <div className="absolute top-20 left-10 w-32 h-32 bg-emerald-200/30 rounded-full blur-3xl" />
-      <div className="absolute bottom-20 right-10 w-40 h-40 bg-amber-200/30 rounded-full blur-3xl" />
+    <div style={styles.container}>
+      <div style={styles.mainCard}>
+        {/* Header */}
+        <div style={styles.header}>
+          <div style={styles.headerTop}>
+            <button onClick={handleBack} style={styles.backButton}>
+              <ChevronLeft size={18} color="#8b5cf6" />
+            </button>
+            <span style={styles.headerTitle}>Create Profile</span>
+            <div style={{width: '32px'}}></div>
+          </div>
+          
+          <div style={styles.progressBars}>
+            <div style={{...styles.progressBar, backgroundColor: '#86efac'}}></div>
+            <div style={{...styles.progressBar, backgroundColor: '#e5e7eb'}}></div>
+            <div style={{...styles.progressBar, backgroundColor: '#e5e7eb'}}></div>
+          </div>
+        </div>
 
-      <div className="w-full max-w-md">
-        {/* Breadcrumb */}
-        <p className="text-stone-500 text-sm mb-3 font-medium tracking-wide">
-          Onboarding / <span className="text-stone-700">Skin Profile</span>
-        </p>
-
-        {/* Main Card */}
-        <div className="bg-white rounded-3xl shadow-xl shadow-stone-200/50 overflow-hidden">
-          {/* Header */}
-          <div className="px-6 pt-6 pb-4">
-            <div className="flex items-center gap-4 mb-6">
-              <button
-                onClick={handleBack}
-                className="w-10 h-10 rounded-full bg-emerald-50 hover:bg-emerald-100 flex items-center justify-center transition-colors group"
-              >
-                <svg
-                  className="w-5 h-5 text-emerald-600 group-hover:-translate-x-0.5 transition-transform"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-              <h1 className="text-lg font-semibold text-stone-800 tracking-tight">
-                Create Profile
-              </h1>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="flex gap-2 mb-8">
-              <div className="flex-1 h-1.5 rounded-full bg-emerald-500" />
-              <div className="flex-1 h-1.5 rounded-full bg-stone-200" />
-              <div className="flex-1 h-1.5 rounded-full bg-stone-200" />
-            </div>
-
-            {/* Illustration */}
-            <div className="flex justify-center mb-6">
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center relative overflow-hidden">
-                {/* Skincare bottles illustration */}
-                <svg
-                  viewBox="0 0 100 100"
-                  className="w-24 h-24"
-                  fill="none"
-                >
-                  {/* Back bottle */}
-                  <rect
-                    x="25"
-                    y="35"
-                    width="20"
-                    height="40"
-                    rx="3"
-                    fill="#D4A574"
-                  />
-                  <rect
-                    x="30"
-                    y="28"
-                    width="10"
-                    height="8"
-                    rx="2"
-                    fill="#C4956A"
-                  />
-                  {/* Front bottle */}
-                  <rect
-                    x="45"
-                    y="40"
-                    width="25"
-                    height="35"
-                    rx="4"
-                    fill="#E8C9A0"
-                  />
-                  <rect
-                    x="52"
-                    y="32"
-                    width="11"
-                    height="10"
-                    rx="2"
-                    fill="#D4B896"
-                  />
-                  {/* Plant leaves */}
-                  <path
-                    d="M60 25 Q70 15 75 25 Q70 30 60 25"
-                    fill="#5D8A66"
-                  />
-                  <path
-                    d="M62 28 Q72 22 78 32 Q70 35 62 28"
-                    fill="#4A7A56"
-                  />
-                  <path
-                    d="M58 30 Q65 20 72 28 Q65 34 58 30"
-                    fill="#6B9A76"
-                  />
-                  {/* Decorative dots */}
-                  <circle cx="32" cy="50" r="2" fill="#C4956A" opacity="0.5" />
-                  <circle cx="38" cy="55" r="1.5" fill="#C4956A" opacity="0.5" />
+        {/* Content */}
+        <div style={styles.contentArea}>
+          {/* Hero Image */}
+          <div style={styles.heroContainer}>
+            <div style={styles.heroCircle}>
+              <div style={styles.heroHand}></div>
+              <div style={styles.heroInner}></div>
+              <div style={styles.leafContainer}>
+                <svg width="38" height="55" viewBox="0 0 40 60" fill="none">
+                  <path d="M20 5 Q15 15, 10 25 Q8 30, 7 35" stroke="#2d5016" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                  <ellipse cx="12" cy="15" rx="4" ry="8" fill="#4a7c25" transform="rotate(-25 12 15)"/>
+                  <ellipse cx="11" cy="22" rx="4" ry="8" fill="#4a7c25" transform="rotate(-30 11 22)"/>
+                  <ellipse cx="9" cy="29" rx="3.5" ry="7" fill="#4a7c25" transform="rotate(-35 9 29)"/>
+                  <ellipse cx="28" cy="15" rx="4" ry="8" fill="#4a7c25" transform="rotate(25 28 15)"/>
+                  <ellipse cx="29" cy="22" rx="4" ry="8" fill="#4a7c25" transform="rotate(30 29 22)"/>
+                  <ellipse cx="31" cy="29" rx="3.5" ry="7" fill="#4a7c25" transform="rotate(35 31 29)"/>
                 </svg>
               </div>
             </div>
+          </div>
 
-            {/* Title */}
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-stone-800 mb-2 tracking-tight">
-                Find Your Perfect
-                <br />
-                Skincare Routine
-              </h2>
-              <p className="text-stone-500 text-sm leading-relaxed px-4">
-                We'll analyze ingredient conflicts and create a personalized
-                plan for your skin.
-              </p>
+          {/* Title */}
+          <h1 style={styles.title}>
+            Find Your Perfect<br />Skincare Routine
+          </h1>
+          <p style={styles.subtitle}>
+            We'll analyze ingredient conflicts and create a<br />personalized plan for your skin.
+          </p>
+
+          {/* Skin Type */}
+          <div style={styles.formSection}>
+            <label style={styles.label}>What's your skin type?</label>
+            <div style={styles.selectWrapper}>
+              <select value={skinType} onChange={(e) => setSkinType(e.target.value)} style={styles.select}>
+                <option>Normal</option>
+                <option>Dry</option>
+                <option>Oily</option>
+                <option>Combination</option>
+                <option>Sensitive</option>
+              </select>
+              <svg style={styles.dropdownIcon} width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
+          </div>
 
-            {/* Skin Type Dropdown */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-stone-700 mb-2">
-                What's your skin type?
-              </label>
-              <div className="relative">
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="w-full px-4 py-3.5 bg-stone-50 border border-stone-200 rounded-xl text-left text-stone-700 font-medium flex items-center justify-between hover:border-stone-300 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
-                >
-                  {skinType}
-                  <svg
-                    className={`w-5 h-5 text-stone-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+          {/* Skin Concerns */}
+          <div>
+            <div style={styles.concernsHeader}>
+              <label style={styles.label}>Select your skin concerns</label>
+              <span style={styles.concernsCount}>Select up to 3</span>
+            </div>
+            <div style={styles.concernsGrid}>
+              {concerns.map((concern) => {
+                const isSelected = selectedConcerns.includes(concern);
+                return (
+                  <button
+                    key={concern}
+                    onClick={() => toggleConcern(concern)}
+                    style={{
+                      ...styles.concernButton,
+                      ...(isSelected ? styles.concernButtonSelected : styles.concernButtonUnselected)
+                    }}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-
-                {isDropdownOpen && (
-                  <div className="absolute z-10 w-full mt-2 bg-white border border-stone-200 rounded-xl shadow-lg overflow-hidden">
-                    {skinTypes.map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => {
-                          setSkinType(type);
-                          setIsDropdownOpen(false);
-                        }}
-                        className={`w-full px-4 py-3 text-left hover:bg-emerald-50 transition-colors ${
-                          skinType === type
-                            ? 'bg-emerald-50 text-emerald-700 font-medium'
-                            : 'text-stone-700'
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Skin Concerns */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-semibold text-stone-700">
-                  Select your skin concerns
-                </label>
-                <span className="text-xs text-stone-400 font-medium">
-                  Select up to 3
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {skinConcerns.map((concern) => {
-                  const isSelected = selectedConcerns.includes(concern);
-                  return (
-                    <button
-                      key={concern}
-                      onClick={() => toggleConcern(concern)}
-                      disabled={!isSelected && selectedConcerns.length >= 3}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-1.5 ${
-                        isSelected
-                          ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/25'
-                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed'
-                      }`}
-                    >
-                      {concern}
-                      {isSelected && (
-                        <svg
-                          className="w-4 h-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                    {concern}
+                    {isSelected && (
+                      <div style={styles.xCircle}>
+                        <X size={10} color="white" strokeWidth={3} />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Continue Button */}
-          <div className="px-6 pb-6">
-            <button
-              onClick={handleContinue}
-              className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/30 transition-all duration-200 hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-0.5 active:translate-y-0"
-            >
-              Continue
-            </button>
-          </div>
+          <button onClick={handleContinue} style={styles.continueButton}>
+            Continue
+          </button>
         </div>
-
-        {/* Footer hint */}
-        <p className="text-center text-stone-400 text-xs mt-4">
-          Your data is secure and never shared
-        </p>
       </div>
     </div>
   );
