@@ -416,7 +416,7 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ## 🔗 Links
 
--   **Live Demo:** [Coming soon]
+-   ~~**Live Demo:** [Coming soon]~~
 -   **Hackathon Event:** [Cursor x Anthropic Hackathon Malaysia](https://luma.com/cursor-hack-my?tk=q1bHZ5)
 -   **Convex Dashboard:** [Your deployment dashboard]
 -   **GitHub Repository:** [Your repo URL]
