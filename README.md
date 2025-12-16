@@ -83,7 +83,7 @@ Skincare enthusiasts waste money and risk skin damage by unknowingly combining i
 ### AI & Integrations
 
 -   **Anthropic Claude 3.5 Sonnet** - AI-powered conflict analysis
--   **Clerk** - User authentication (ready for integration)
+-   ~~**Clerk** - User authentication (ready for integration)~~
 
 ### Deployment
 
