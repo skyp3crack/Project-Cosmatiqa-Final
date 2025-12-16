@@ -59,10 +59,18 @@ export default function ProductInput() {
       return;
     }
 
+    console.log('🚀 ===== STARTING ANALYSIS =====');
+    console.log('📦 Products to analyze:', filledProducts.length);
+    console.log('📋 Product details:', filledProducts.map(p => ({ name: p.name, time: p.time })));
+    
     setIsAnalyzing(true);
     try {
       // Get userId from userProfile (saved during onboarding)
       const userId = userProfile?.userId || `temp_user_${Date.now()}`;
+      
+      console.log('👤 User ID:', userId);
+      console.log('📤 Calling analyzeRoutine action...');
+      console.log('⏳ This will call the backend LLM function - watch Convex terminal for logs!');
       
       // Call Convex mutation to analyze routine
       const result = await analyzeRoutine({
@@ -75,6 +83,14 @@ export default function ProductInput() {
         })),
       });
 
+      console.log('✅ Analysis complete! Result:', {
+        analysisId: result.analysisId,
+        routineId: result.routineId,
+        safetyScore: result.safetyScore,
+        conflictsFound: result.conflictsFound,
+        ingredientsAnalyzed: result.ingredientsAnalyzed,
+      });
+
       // Save result to context
       setAnalysisData({
         analysisId: result.analysisId,
@@ -84,13 +100,16 @@ export default function ProductInput() {
         ingredientsAnalyzed: result.ingredientsAnalyzed,
       });
 
+      console.log('📊 Navigating to analysis loading page...');
       // Navigate to loading/results page
       navigate('/analysis');
     } catch (error) {
-      console.error('Analysis failed:', error);
+      console.error('❌ Analysis failed:', error);
+      console.error('Error details:', error.message, error.stack);
       alert('Failed to analyze routine. Please try again.');
     } finally {
       setIsAnalyzing(false);
+      console.log('🏁 Analysis handler complete');
     }
   };
 

@@ -109,6 +109,7 @@ export default defineSchema({
     conflictsFound: v.number(),
     analysisData: v.string(), // JSON stringified detailed analysis
     recommendations: v.array(v.string()),
+    profileSummary: v.optional(v.string()), // Comprehensive personalized summary for Summary tab only - ALWAYS SAVED WITH FALLBACK
     createdAt: v.number(),
   })
     .index("by_userId", ["userId"])

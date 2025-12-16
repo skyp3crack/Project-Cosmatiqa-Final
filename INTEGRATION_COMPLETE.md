@@ -369,3 +369,6 @@ All powered by Convex backend with real database storage and conflict detection 
 The app is ready for testing and further enhancement! 🚀
 
 
+
+
+

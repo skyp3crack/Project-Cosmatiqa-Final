@@ -359,6 +359,7 @@ export const _saveAnalysisResults = mutation({
     conflictsFound: v.number(),
     analysisData: v.string(),
     recommendations: v.array(v.string()),
+    profileSummary: v.optional(v.string()),
     now: v.number(),
   },
   handler: async (ctx, args) => {
@@ -370,8 +371,42 @@ export const _saveAnalysisResults = mutation({
       conflictsFound: args.conflictsFound,
       analysisData: args.analysisData,
       recommendations: args.recommendations,
+      profileSummary: args.profileSummary,
       createdAt: args.now,
     });
+  },
+});
+
+/**
+ * Internal query: Get analysis by ID (for verification)
+ */
+export const _getAnalysisById = query({
+  args: { analysisId: v.id("analysisResults") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.analysisId);
+  },
+});
+
+/**
+ * Test mutation: Add profileSummary to existing analysis (for testing schema)
+ */
+export const testAddProfileSummary = mutation({
+  args: {
+    analysisId: v.id("analysisResults"),
+    profileSummary: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const analysis = await ctx.db.get(args.analysisId);
+    if (!analysis) {
+      throw new Error("Analysis not found");
+    }
+    
+    // Try to patch with profileSummary
+    await ctx.db.patch(args.analysisId, {
+      profileSummary: args.profileSummary,
+    });
+    
+    return { success: true, message: "profileSummary added successfully" };
   },
 });
 
@@ -606,10 +641,13 @@ export const analyzeRoutine = action({
       console.log("🤖 ===== CALLING CLAUDE AI =====");
       console.log("📊 Products prepared for AI:", productsForAI.length);
       console.log("👤 User profile:", userProfile ? "Found" : "Not found (using defaults)");
+      console.log("🔍 This log should appear in Convex terminal - if you don't see it, logs aren't showing!");
       
       let aiAnalysis: any = null;
       try {
         console.log("🚀 Invoking Claude AI action...");
+        console.log("⏳ This will take 10-30 seconds - watch for logs below!");
+        const startTime = Date.now();
         aiAnalysis = await ctx.runAction(api.functions.llm.analyzeRoutineWithAI, {
           userProfile: {
             skinType: userProfile?.skinType || "normal",
@@ -618,11 +656,42 @@ export const analyzeRoutine = action({
           },
           products: productsForAI,
         });
-        console.log("✅ Claude AI analysis successful!");
+        const duration = Date.now() - startTime;
+        console.log(`✅ Claude AI analysis successful! (took ${duration}ms)`);
+        console.log("🔍 If you see this log, the LLM was called successfully!");
         console.log("📊 AI Results Summary:");
         console.log("   - Risk Score:", aiAnalysis.overallRiskScore);
         console.log("   - Conflicts:", aiAnalysis.conflicts?.length || 0);
         console.log("   - Summary:", aiAnalysis.summary?.substring(0, 100));
+        console.log("   - Profile Summary:", aiAnalysis.profileSummary 
+          ? `✅ PROVIDED (${aiAnalysis.profileSummary.length} chars): "${aiAnalysis.profileSummary.substring(0, 100)}..."`
+          : "❌ NOT PROVIDED BY AI");
+        
+        // CRITICAL: Log all fields to see what AI actually returned
+        console.log("📋 ALL FIELDS IN AI RESPONSE:", Object.keys(aiAnalysis));
+        console.log("🔍 Checking profileSummary specifically:");
+        console.log("   - Has profileSummary key?", 'profileSummary' in aiAnalysis);
+        console.log("   - profileSummary value:", aiAnalysis.profileSummary);
+        console.log("   - profileSummary type:", typeof aiAnalysis.profileSummary);
+        console.log("   - profileSummary length:", aiAnalysis.profileSummary?.length || 0);
+        
+        // Validate and truncate summary if it exceeds limits
+        if (aiAnalysis?.summary) {
+          const maxLength = 300;
+          const maxWords = 50;
+          const originalLength = aiAnalysis.summary.length;
+          const wordCount = aiAnalysis.summary.split(/\s+/).length;
+          
+          if (originalLength > maxLength || wordCount > maxWords) {
+            // Truncate to first 300 chars or first 50 words, whichever is shorter
+            const truncated = aiAnalysis.summary.substring(0, maxLength);
+            const words = truncated.split(/\s+/).slice(0, maxWords).join(' ');
+            const finalSummary = words + (words.length < originalLength ? '...' : '');
+            
+            console.log(`⚠️ Summary truncated from ${originalLength} chars (${wordCount} words) to ${finalSummary.length} chars (${words.split(/\s+/).length} words)`);
+            aiAnalysis.summary = finalSummary;
+          }
+        }
       } catch (error) {
         console.error("❌ Claude AI analysis failed, falling back to rule-based");
         console.error("Error details:", error);
@@ -864,7 +933,43 @@ export const analyzeRoutine = action({
       }
 
       // Step 6: Create analysis result
-      const analysisData = JSON.stringify({
+      // Get profileSummary from AI, or generate fallback if missing (do this BEFORE creating analysisData)
+      let profileSummaryForData = aiAnalysis?.profileSummary || "";
+      
+      // If AI didn't generate profileSummary, create one from available data
+      if (!profileSummaryForData || profileSummaryForData.trim().length === 0) {
+        console.log("⚠️ AI did not generate profileSummary - creating fallback summary");
+        const skinType = userProfile?.skinType || "normal";
+        const goals = userProfile?.goals?.join(", ") || "general skincare";
+        const sensitivities = userProfile?.sensitivities?.join(", ") || "none";
+        const riskLevel = overallRiskScore === "safe" ? "low" : overallRiskScore === "caution" ? "moderate" : "high";
+        const riskScoreNum = riskScore;
+        
+        profileSummaryForData = `Your skincare routine analysis for ${skinType} skin reveals a ${riskLevel} risk level (${riskScoreNum}/10). `;
+        if (conflicts.length > 0) {
+          profileSummaryForData += `The routine contains ${conflicts.length} potential conflict${conflicts.length > 1 ? 's' : ''} that require attention. `;
+        }
+        if (aiAnalysis?.ingredientWarnings && aiAnalysis.ingredientWarnings.length > 0) {
+          profileSummaryForData += `Several ingredients may be problematic for ${skinType} skin and should be used with caution. `;
+        }
+        if (aiAnalysis?.ingredientBenefits && aiAnalysis.ingredientBenefits.length > 0) {
+          profileSummaryForData += `Your routine includes beneficial ingredients well-suited for ${skinType} skin. `;
+        }
+        profileSummaryForData += `Given your skin type (${skinType}) and goals (${goals}), this routine ${riskLevel === "high" ? "requires significant modifications" : riskLevel === "moderate" ? "benefits from optimization" : "is generally compatible"} with your skin profile. `;
+        if (sensitivities !== "none") {
+          profileSummaryForData += `Your specific sensitivities (${sensitivities}) should be carefully considered when using active ingredients. `;
+        }
+        profileSummaryForData += `Review the detailed analysis in other tabs for specific recommendations on conflicts, ingredient warnings, beneficial ingredients, and routine optimization tailored to your ${skinType} skin type.`;
+        console.log(`✅ Generated fallback profileSummary (${profileSummaryForData.length} chars)`);
+      } else {
+        console.log(`✅ Using AI-generated profileSummary (${profileSummaryForData.length} chars)`);
+      }
+      
+      console.log("📦 Creating analysisData JSON with profileSummary:");
+      console.log("   - profileSummaryForData length:", profileSummaryForData.length);
+      console.log("   - profileSummaryForData preview:", profileSummaryForData.substring(0, 100) + "...");
+      
+      const analysisDataObj = {
         totalIngredients: allMatchedIngredients.length,
         safetyScore: safetyScore,
         riskScore: riskScore,
@@ -872,15 +977,27 @@ export const analyzeRoutine = action({
           severity: c.severity,
           type: c.conflictType,
         })),
+        profileSummary: profileSummaryForData, // ALWAYS include at top level
         aiAnalysis: aiAnalysis
           ? {
               overallRiskScore: aiAnalysis.overallRiskScore,
               summary: aiAnalysis.summary,
+              profileSummary: profileSummaryForData, // Also include in aiAnalysis for backward compatibility
               ingredientWarnings: aiAnalysis.ingredientWarnings || [],
               ingredientBenefits: aiAnalysis.ingredientBenefits || [],
+              morningRoutine: aiAnalysis.morningRoutine || [],
+              eveningRoutine: aiAnalysis.eveningRoutine || [],
             }
           : null,
-      });
+      };
+      
+      console.log("📦 analysisDataObj keys before stringify:", Object.keys(analysisDataObj));
+      console.log("📦 analysisDataObj.profileSummary exists?", 'profileSummary' in analysisDataObj);
+      
+      const analysisData = JSON.stringify(analysisDataObj);
+      
+      console.log("📦 analysisData stringified, length:", analysisData.length);
+      console.log("📦 Verifying profileSummary in stringified data:", analysisData.includes('"profileSummary"'));
 
       // Step 6: Save AI-detected conflicts to compatibilityMatrix (learn from AI)
       if (aiAnalysis && aiAnalysis.conflicts && aiAnalysis.conflicts.length > 0 && conflicts.length > 0) {
@@ -953,6 +1070,54 @@ export const analyzeRoutine = action({
       }
 
       // Step 7: Save analysis results (use runMutation)
+      // Get profileSummary from AI, or generate fallback if missing
+      let profileSummaryToSave = aiAnalysis?.profileSummary || "";
+      
+      // If AI didn't generate profileSummary, create one from available data
+      if (!profileSummaryToSave || profileSummaryToSave.trim().length === 0) {
+        console.log("⚠️ AI did not generate profileSummary - creating fallback summary");
+        
+        const skinType = userProfile?.skinType || "normal";
+        const goals = userProfile?.goals?.join(", ") || "general skincare";
+        const sensitivities = userProfile?.sensitivities?.join(", ") || "none";
+        
+        // Build comprehensive profile summary from available data
+        const riskLevel = overallRiskScore === "safe" ? "low" : overallRiskScore === "caution" ? "moderate" : "high";
+        const riskScoreNum = riskScore;
+        
+        profileSummaryToSave = `Your skincare routine analysis for ${skinType} skin reveals a ${riskLevel} risk level (${riskScoreNum}/10). `;
+        
+        if (conflicts.length > 0) {
+          profileSummaryToSave += `The routine contains ${conflicts.length} potential conflict${conflicts.length > 1 ? 's' : ''} that require attention. `;
+        }
+        
+        if (aiAnalysis?.ingredientWarnings && aiAnalysis.ingredientWarnings.length > 0) {
+          profileSummaryToSave += `Several ingredients may be problematic for ${skinType} skin and should be used with caution. `;
+        }
+        
+        if (aiAnalysis?.ingredientBenefits && aiAnalysis.ingredientBenefits.length > 0) {
+          profileSummaryToSave += `Your routine includes beneficial ingredients well-suited for ${skinType} skin. `;
+        }
+        
+        profileSummaryToSave += `Given your skin type (${skinType}) and goals (${goals}), this routine ${riskLevel === "high" ? "requires significant modifications" : riskLevel === "moderate" ? "benefits from optimization" : "is generally compatible"} with your skin profile. `;
+        
+        if (sensitivities !== "none") {
+          profileSummaryToSave += `Your specific sensitivities (${sensitivities}) should be carefully considered when using active ingredients. `;
+        }
+        
+        profileSummaryToSave += `Review the detailed analysis in other tabs for specific recommendations on conflicts, ingredient warnings, beneficial ingredients, and routine optimization tailored to your ${skinType} skin type.`;
+        
+        console.log(`✅ Generated fallback profileSummary (${profileSummaryToSave.length} chars)`);
+      } else {
+        console.log(`✅ Using AI-generated profileSummary (${profileSummaryToSave.length} chars)`);
+      }
+      
+      // Save with profileSummary (always include it now)
+      console.log("💾 About to save analysis with profileSummary:");
+      console.log("   - profileSummary length:", profileSummaryToSave.length);
+      console.log("   - profileSummary preview:", profileSummaryToSave.substring(0, 100) + "...");
+      console.log("   - All save params keys:", ["userId", "routineId", "overallRiskScore", "summaryScore", "conflictsFound", "analysisData", "recommendations", "profileSummary", "now"]);
+      
       const analysisId = await ctx.runMutation(api.functions.analysis._saveAnalysisResults, {
         userId: args.userId,
         routineId,
@@ -961,8 +1126,18 @@ export const analyzeRoutine = action({
         conflictsFound: conflicts.length,
         analysisData,
         recommendations,
+        profileSummary: profileSummaryToSave, // Always include, even if empty (fallback ensures it's never empty)
         now,
       });
+      
+      console.log("✅ Analysis saved with ID:", analysisId);
+      console.log("   - profileSummary saved:", profileSummaryToSave ? `✅ YES (${profileSummaryToSave.length} chars)` : "❌ NO");
+      
+      // Verify it was saved by reading it back
+      const savedAnalysis = await ctx.runQuery(api.functions.analysis._getAnalysisById, { analysisId });
+      console.log("🔍 Verification - Reading back saved analysis:");
+      console.log("   - Has profileSummary field?", 'profileSummary' in (savedAnalysis || {}));
+      console.log("   - profileSummary value:", savedAnalysis?.profileSummary ? `✅ EXISTS (${savedAnalysis.profileSummary.length} chars)` : "❌ MISSING");
 
       // Step 8: Save detected conflicts (use runMutation)
       for (const conflict of conflicts) {
@@ -1059,6 +1234,8 @@ export const getAnalysisResults = query({
         ...analysis,
         safetyScore: analysisDataParsed?.safetyScore || 0,
         overallSafetyScore: analysisDataParsed?.safetyScore || 0, // Backwards compatibility
+        // Return structured AI data for frontend to use directly
+        aiAnalysis: analysisDataParsed?.aiAnalysis || null,
       },
       routine,
       products,

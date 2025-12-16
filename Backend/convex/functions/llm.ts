@@ -84,11 +84,16 @@ Analyze this skincare routine comprehensively:
    - Rate severity: HIGH (irritation, barrier damage, efficacy loss), MEDIUM (minor issues), LOW (best practices)
 
 3. PERSONALIZED RECOMMENDATIONS:
-   - For ${args.userProfile.skinType} skin: Suggest ingredient alternatives if current ones are unsuitable
+   - Identify the TOP 3 MOST BENEFICIAL ingredients for ${args.userProfile.skinType} skin
+   - These should be ingredients that are either:
+     a) Already in the user's routine and particularly well-suited for their skin type
+     b) Missing from their routine but highly recommended for their concerns/goals
+   - For each of the top 3, explain why it's beneficial for ${args.userProfile.skinType} skin
    - Address specific concerns: ${args.userProfile.sensitivities.join(", ") || "none"}
    - Align with goals: ${args.userProfile.goals.join(", ") || "general"}
    - Provide ingredient-specific advice (e.g., "Retinol may be too harsh for sensitive skin, consider Bakuchiol instead")
    - Suggest ingredient concentrations or formulations appropriate for this skin type
+   - IMPORTANT: Return exactly 3 ingredients in ingredientBenefits array, prioritizing the most beneficial ones
 
 4. ROUTINE OPTIMIZATION:
    - Suggest optimal AM/PM product arrangement
@@ -121,6 +126,21 @@ OUTPUT FORMAT (JSON):
     }
   ],
   "ingredientBenefits": [
+    // Return exactly 3 ingredients that are MOST beneficial for ${args.userProfile.skinType} skin
+    // Prioritize ingredients that:
+    // 1. Are already in the user's routine AND beneficial for their skin type
+    // 2. Address their specific concerns (${args.userProfile.sensitivities.join(", ") || "none"})
+    // 3. Support their goals (${args.userProfile.goals.join(", ") || "general"})
+    {
+      "ingredient": "<INCI name>",
+      "product": "<product name>",
+      "benefit": "<why this ingredient is good for ${args.userProfile.skinType} skin>"
+    },
+    {
+      "ingredient": "<INCI name>",
+      "product": "<product name>",
+      "benefit": "<why this ingredient is good for ${args.userProfile.skinType} skin>"
+    },
     {
       "ingredient": "<INCI name>",
       "product": "<product name>",
@@ -129,7 +149,8 @@ OUTPUT FORMAT (JSON):
   ],
   "morningRoutine": ["<product name>", ...],
   "eveningRoutine": ["<product name>", ...],
-  "summary": "<comprehensive summary addressing: 1) Overall safety for ${args.userProfile.skinType} skin, 2) Key conflicts found, 3) Personalized recommendations based on INCI analysis and skin type, 4) Specific ingredient adjustments needed>"
+  "summary": "<STRICT LIMIT: Maximum 300 characters OR 50 words. Concise summary focusing ONLY on information NOT covered in other tabs. Format: 1) Overall safety assessment (1 sentence: risk level X/10 and brief context for ${args.userProfile.skinType} skin), 2) Most critical issue (1 sentence summary without details - see Conflicts tab), 3) Critical action items (3-5 bullet points of immediate actions), 4) Missing ingredients overview (brief list - see Benefits tab for details). EXCLUDE: Detailed conflicts, warnings, benefits, routine schedules. Count your words/characters and stay within limit.>",
+  "profileSummary": "<REQUIRED FIELD - DO NOT SKIP. Write a comprehensive personalized summary (300-500 words, minimum 300 words) specifically tailored for ${args.userProfile.skinType} skin with ${args.userProfile.goals.join(', ') || 'general'} goals. This summary is EXCLUSIVELY for the Summary tab and must NOT repeat or duplicate information from other tabs. Focus on: 1) Overall routine compatibility assessment for their specific skin profile (not just risk score), 2) Holistic routine evaluation - how products work together as a system, 3) Personalized insights about routine balance, ingredient synergy, and overall approach, 4) Strategic guidance on routine philosophy and long-term skin health, 5) Contextual interpretation of findings - what the analysis means FOR THIS SPECIFIC USER. STRICTLY EXCLUDE: Specific conflict details (covered in Conflicts tab), ingredient warnings (covered in Warnings tab), ingredient benefits (covered in Benefits tab), routine schedules (covered in Routine tab). Write as a cohesive narrative tailored to ${args.userProfile.skinType} skin, addressing their concerns (${args.userProfile.sensitivities.join(', ') || 'none'}) and goals (${args.userProfile.goals.join(', ') || 'general'}). This field is MANDATORY - you MUST include it in your JSON response.>"
 }
 
 IMPORTANT GUIDELINES:
@@ -142,6 +163,8 @@ IMPORTANT GUIDELINES:
 - Rate overallRiskScore: 0-3 (safe), 4-6 (caution needed), 7-10 (high risk for ${args.userProfile.skinType} skin)
 - Make recommendations specific to INCI ingredients and this user's profile
 - Provide actionable, ingredient-level advice
+- CRITICAL: ingredientBenefits array must contain exactly 3 items - the top 3 most beneficial ingredients for ${args.userProfile.skinType} skin
+- CRITICAL: profileSummary field is REQUIRED - you MUST include a comprehensive 300-500 word personalized summary for the Summary tab. Do NOT skip this field.
 
 Return ONLY valid JSON, no additional text.`;
 
@@ -233,6 +256,13 @@ Return ONLY valid JSON, no additional text.`;
       }
 
       console.log("🔍 Parsing JSON response...");
+      console.log("📄 Raw response text length:", responseText.length, "chars");
+      console.log("📄 Raw response preview:", responseText.substring(0, 500) + "...");
+      
+      // Check if profileSummary is mentioned in raw response before parsing
+      const hasProfileSummaryInRaw = responseText.includes('"profileSummary"') || responseText.includes("profileSummary");
+      console.log("🔍 Checking for profileSummary in raw response:", hasProfileSummaryInRaw ? "✅ FOUND" : "❌ NOT FOUND");
+      
       const aiAnalysis = JSON.parse(responseText);
       console.log("✅ Successfully parsed Claude response:");
       console.log("   Overall Risk Score:", aiAnalysis.overallRiskScore);
@@ -242,6 +272,21 @@ Return ONLY valid JSON, no additional text.`;
       console.log("   Morning routine items:", aiAnalysis.morningRoutine?.length || 0);
       console.log("   Evening routine items:", aiAnalysis.eveningRoutine?.length || 0);
       console.log("   Summary:", aiAnalysis.summary?.substring(0, 100) + "...");
+      console.log("   Profile Summary:", aiAnalysis.profileSummary 
+        ? `✅ PROVIDED (${aiAnalysis.profileSummary.length} chars): "${aiAnalysis.profileSummary.substring(0, 100)}..."`
+        : "❌ NOT PROVIDED BY AI");
+      
+      // Log all keys in the parsed JSON to see what fields AI actually returned
+      console.log("📋 All fields in AI response:", Object.keys(aiAnalysis));
+      
+      // WARNING if profileSummary is missing
+      if (!aiAnalysis.profileSummary || aiAnalysis.profileSummary.trim().length === 0) {
+        console.error("⚠️⚠️⚠️ WARNING: profileSummary is MISSING from AI response! ⚠️⚠️⚠️");
+        console.error("   Available fields:", Object.keys(aiAnalysis));
+        console.error("   Raw response preview:", responseText.substring(0, 1000));
+      } else {
+        console.log("✅✅✅ SUCCESS: profileSummary was generated by AI! ✅✅✅");
+      }
       
       if (aiAnalysis.conflicts && aiAnalysis.conflicts.length > 0) {
         console.log("⚠️  Conflicts detected:");
@@ -273,6 +318,7 @@ Return ONLY valid JSON, no additional text.`;
         morningRoutine: aiAnalysis.morningRoutine || [],
         eveningRoutine: aiAnalysis.eveningRoutine || [],
         summary: aiAnalysis.summary || "Analysis complete.",
+        profileSummary: aiAnalysis.profileSummary || "",
       };
 
       console.log("🎉 ===== CLAUDE AI ANALYSIS COMPLETE =====");
